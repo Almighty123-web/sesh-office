@@ -1,15 +1,8 @@
-import './globals.css';
-import type { Metadata } from 'next';
+"use client";
 
-export const metadata: Metadata = {
-  title: 'SESH Office',
-  description: 'Modern productivity workspace for teams and businesses.',
-};
+import { SessionProvider } from 'next-auth/react';
+import { ReactNode } from 'react';
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <html lang="en">
-      <body>{children}</body>
-    </html>
-  );
+export function Providers({ children }: { children: ReactNode }) {
+  return <SessionProvider>{children}</SessionProvider>;
 }

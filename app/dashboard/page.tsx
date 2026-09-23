@@ -1,135 +1,168 @@
+"use client";
+
 import Link from 'next/link';
+import { signIn } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { FormEvent, useState } from 'react';
 
-const navItems = [
-  { label: 'Dashboard', href: '/dashboard', active: true, icon: '▣' },
-  { label: 'Documents', href: '/docs', icon: '✎' },
-  { label: 'Sheets', href: '/sheets', icon: '▤' },
-  { label: 'Slides', href: '/slides', icon: '▣' },
-  { label: 'Teams', href: '/settings', icon: '◎' },
-];
+export default function LoginPage() {
+  const router = useRouter();
+  const [isRegister, setIsRegister] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-const workspaceCards = [
-  { name: 'Q3 Strategy', status: 'Shared', type: 'Doc', updated: '2 hours ago' },
-  { name: 'Sales Tracker', status: 'Live', type: 'Sheet', updated: '18 minutes ago' },
-  { name: 'Launch Deck', status: 'Review', type: 'Presentation', updated: 'Today' },
-];
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setLoading(true);
+    setError('');
 
-const overviewStats = [
-  { label: 'Files', value: '1,284', tone: 'bg-blue-100 text-blue-700' },
-  { label: 'Team activity', value: '96%', tone: 'bg-emerald-100 text-emerald-700' },
-  { label: 'Pending reviews', value: '14', tone: 'bg-amber-100 text-amber-700' },
-];
+    const form = new FormData(event.currentTarget);
+    const payload = {
+      name: (form.get('name') as string) ?? '',
+      email: (form.get('email') as string) ?? '',
+      password: (form.get('password') as string) ?? '',
+    };
 
-const activity = [
-  'Board update approved by finance',
-  'Marketing deck shared with leadership',
-  'Ops summary synced to workspace',
-  'New internal request assigned to design',
-];
+    try {
+      if (isRegister) {
+        const res = await fetch('/api/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
 
-export default function DashboardPage() {
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.message ?? 'Registration failed');
+        }
+      }
+
+      const signInResult = await signIn('credentials', {
+        email: payload.email,
+        password: payload.password,
+        redirect: false,
+      });
+
+      if (signInResult?.error) {
+        throw new Error('Invalid email or password');
+      }
+
+      router.push('/dashboard');
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong');
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
-    <div className="app-shell flex min-h-screen bg-[#f3f7ff]">
-      <aside className="w-72 border-r border-slate-200 bg-white/80 p-5 backdrop-blur-xl">
-        <div className="mb-8 flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 text-lg font-black text-white">
-            S
-          </div>
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">Suite</p>
-            <h1 className="text-xl font-black">SESH Office</h1>
-          </div>
-        </div>
-
-        <nav className="space-y-2">
-          {navItems.map((item) => (
-            <Link
-              key={item.label}
-              href={item.href}
-              className={`sidebar-link ${item.active ? 'active' : ''}`}
-            >
-              <span>{item.icon}</span>
-              <span>{item.label}</span>
-            </Link>
-          ))}
-        </nav>
-
-        <div className="mt-8 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-700 p-4 text-white shadow-lg">
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-300">Storage</p>
-          <h3 className="mt-3 text-3xl font-black">1.8 TB</h3>
-          <p className="mt-2 text-sm text-slate-300">36% used • 4 team spaces</p>
-        </div>
-      </aside>
-
-      <main className="flex-1 p-6">
-        <header className="soft-card mb-6 flex items-center justify-between rounded-2xl px-5 py-4">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Workspace overview</p>
-            <h2 className="mt-1 text-3xl font-black tracking-[-0.04em] text-slate-900">Good afternoon, Alex</h2>
-          </div>
-
+    <main className="app-shell flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,#eaf2ff_0%,#eff8ff_30%,#f8fafc_100%)] p-6">
+      <div className="grid w-full max-w-6xl overflow-hidden rounded-[30px] border border-slate-200 bg-white/80 shadow-[0_25px_80px_rgba(15,23,42,0.12)] backdrop-blur-xl lg:grid-cols-[1.1fr_0.9fr]">
+        <div className="bg-gradient-to-br from-slate-900 via-blue-900 to-blue-700 p-10 text-white">
           <div className="flex items-center gap-3">
-            <button className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50">
-              Search
-            </button>
-            <button className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-500">
-              Create
-            </button>
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 text-xl font-black">S</div>
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-blue-200">Productivity Suite</p>
+              <h1 className="text-2xl font-black">SESH Office</h1>
+            </div>
           </div>
-        </header>
 
-        <section className="mb-6 grid gap-4 md:grid-cols-3">
-          {overviewStats.map((stat) => (
-            <div key={stat.label} className="soft-card rounded-2xl p-5">
-              <div className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${stat.tone}`}>
-                {stat.label}
+          <div className="mt-14 max-w-md">
+            <h2 className="text-4xl font-black leading-tight tracking-[-0.05em]">Bring every team into one workspace.</h2>
+            <p className="mt-5 text-base leading-8 text-blue-100">
+              Create docs, spreadsheets, presentations, and real-time workflows with a workspace designed for modern business operations.
+            </p>
+          </div>
+
+          <div className="mt-12 space-y-4">
+            {['Document collaboration', 'Realtime analytics', 'Secure sharing'].map((item) => (
+              <div key={item} className="flex items-center gap-3 rounded-2xl bg-white/5 px-4 py-3">
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-400/20 text-emerald-300">✓</span>
+                <span className="font-semibold text-blue-50">{item}</span>
               </div>
-              <div className="mt-4 text-3xl font-black tracking-[-0.05em] text-slate-900">{stat.value}</div>
-            </div>
-          ))}
-        </section>
+            ))}
+          </div>
+        </div>
 
-        <section className="grid gap-6 xl:grid-cols-[1.5fr_0.8fr]">
-          <div className="soft-card rounded-2xl p-5">
-            <div className="mb-5 flex items-center justify-between">
-              <h3 className="text-xl font-black text-slate-900">Recent workspaces</h3>
-              <button className="text-sm font-bold text-blue-600 hover:text-blue-500">View all</button>
+        <div className="p-10 md:p-12">
+          <div className="mb-8 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">{isRegister ? 'Create account' : 'Welcome back'}</p>
+              <h3 className="mt-3 text-3xl font-black tracking-[-0.04em] text-slate-900">{isRegister ? 'Get started' : 'Sign in'}</h3>
             </div>
-
-            <div className="space-y-3">
-              {workspaceCards.map((card) => (
-                <div key={card.name} className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-blue-100 to-cyan-100 text-lg">
-                      {card.type === 'Doc' ? '📝' : card.type === 'Sheet' ? '📊' : '📽️'}
-                    </div>
-                    <div>
-                      <p className="font-bold text-slate-900">{card.name}</p>
-                      <p className="text-sm text-slate-500">{card.updated}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <span className="status-pill text-emerald-600 bg-emerald-100">{card.status}</span>
-                    <p className="mt-2 text-xs font-bold uppercase tracking-[0.12em] text-slate-400">{card.type}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <button
+              type="button"
+              onClick={() => setIsRegister((current) => !current)}
+              className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-bold text-slate-700"
+            >
+              {isRegister ? 'Have account?' : 'New user?'}
+            </button>
           </div>
 
-          <div className="soft-card rounded-2xl p-5">
-            <h3 className="text-xl font-black text-slate-900">Activity feed</h3>
-            <div className="mt-5 space-y-4">
-              {activity.map((item) => (
-                <div key={item} className="flex gap-3">
-                  <div className="mt-1 h-2.5 w-2.5 rounded-full bg-blue-500" />
-                  <p className="text-sm leading-6 text-slate-600">{item}</p>
-                </div>
-              ))}
+          <form className="space-y-5" onSubmit={handleSubmit}>
+            {isRegister && (
+              <div>
+                <label className="mb-2 block text-sm font-bold text-slate-700">Full name</label>
+                <input
+                  name="name"
+                  type="text"
+                  placeholder="Alex Morgan"
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white"
+                  required
+                />
+              </div>
+            )}
+
+            <div>
+              <label className="mb-2 block text-sm font-bold text-slate-700">Email</label>
+              <input
+                name="email"
+                type="email"
+                placeholder="alex@company.com"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white"
+                required
+              />
             </div>
-          </div>
-        </section>
-      </main>
-    </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-bold text-slate-700">Password</label>
+              <input
+                name="password"
+                type="password"
+                placeholder="Minimum 8 characters"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white"
+                required
+              />
+            </div>
+
+            {!isRegister && (
+              <div className="flex items-center justify-between text-sm">
+                <label className="flex items-center gap-2 text-slate-600">
+                  <input type="checkbox" className="h-4 w-4" />
+                  Remember me
+                </label>
+                <a href="#" className="font-bold text-blue-600">Forgot password?</a>
+              </div>
+            )}
+
+            {error && (
+              <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
+                {error}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full rounded-2xl bg-slate-900 px-5 py-3.5 text-base font-bold text-white shadow-lg shadow-slate-900/15 hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {loading ? 'Please wait...' : isRegister ? 'Create account' : 'Sign in to SESH Office'}
+            </button>
+          </form>
+        </div>
+      </div>
+    </main>
   );
 }
